@@ -49,7 +49,7 @@ class LSSH():
 
         stdin, stdout, stderr = self.cl_ssh.exec_command(' '.join(cmd_tokens))
         for line in stdout:
-            print('... ' + line.strip('\n'))
+            print(line.strip('\n'))
 
         return SHELL_STATUS_RUN
         
@@ -114,7 +114,6 @@ class LSSH():
                 #Excute the command and retrieve new status
                 ##status = self.execute(cmd_tokens)
                 status = self.SSHCommand(cmd_tokens)
-
 
             except (KeyboardInterrupt, SystemExit, EOFError):
                 print "KeyboardInterrupt"
