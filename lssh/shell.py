@@ -56,18 +56,23 @@ def shell_loop():
     status = SHELL_STATUS_RUN
 
     while status == SHELL_STATUS_RUN:
-        #Display a command prompt
-        sys.stdout.write('> ')
-        sys.stdout.flush()
+        try:
+            #Display a command prompt
+            sys.stdout.write('> ')
+            sys.stdout.flush()
 
-        #Read command input
-        cmd = sys.stdin.readline()
+            #Read command input
+            cmd = sys.stdin.readline()
 
-        #tokenize command input
-        cmd_tokens = tokenize(cmd)
+            #tokenize command input
+            cmd_tokens = tokenize(cmd)
 
-        #Excute the command and retrieve new status
-        status = execute(cmd_tokens)
+            #Excute the command and retrieve new status
+            status = execute(cmd_tokens)
+        except (KeyboardInterrupt, SystemExit, EOFError):
+            print "KeyboardInterrupt"
+        except:
+            print "Error Unknown"
 
 def main():
     # Init shell before starting the main loop
