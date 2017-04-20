@@ -5,6 +5,7 @@ from constants import *
 from builtins import *
 
 import paramiko
+from getpass import getpass
 
 class LSSH():
     def __init__(self):
@@ -125,9 +126,7 @@ class LSSH():
 
 if __name__=="__main__":
     lssh = LSSH()
-    sys.stdout.write(sys.argv[1]+' password: ')
-    sys.stdout.flush()
-    password = sys.stdin.readline().rstrip('\n')
+    password = getpass(prompt=sys.argv[1]+' password: ')
 
     if lssh.SSHConnect(host=sys.argv[1].split('@')[1], username=sys.argv[1].split('@')[0],password=password):
         lssh.shell_loop()
