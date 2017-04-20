@@ -4,7 +4,9 @@ import os
 from constants import *
 from builtins import *
 
-class LShell():
+import paramiko
+
+class LSSH():
     def __init__(self):
         # Hash map to store built-in function name and reference as key and value
         self.built_in_cmds = {}
@@ -12,6 +14,36 @@ class LShell():
         # Register all built-in commands here
         self.register_command("cd", cd)
         self.register_command("exit", exit)
+
+        self.cl_ssh = paramiko.SSHClient()
+        self.cl_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    def SSHConnect(self, host='10.118.181.126', username='dpalominop', password='T3v3r1rt0p'):
+        
+        try:
+            self.cl_ssh.connect(host, username=username, password=password)
+        except paramiko.BadHostKeyException:
+            print "Server host key could not be verified."
+            return False
+        except paramiko.AuthenticationException:
+            print "Authentication Failed"
+            return False
+        except paramiko.SSHException:
+            print "Any other error connecting or establishing an SSH session"
+            return False
+        except:
+            print "Other Error, maybe in socket creation."
+            return False
+        
+        return True
+
+    def SSHCommand(self, command):
+        stdin, stdout, stderr = self.cl_ssh.exec_command(command)
+        for line in stdout:
+            print('... ' + line.strip('\n'))
+        
+    def SSHClose(self):
+        self.cl_ssh.close()
 
     def tokenize(self, cmd):
         return shlex.split(cmd)
@@ -79,5 +111,10 @@ class LShell():
         self.shell_loop()
 
 if __name__=="__main__":
-    lshell = LShell()
-    lshell.main()
+    lssh = LSSH()
+    sys.stdout.write(sys.argv[1]+' password: ')
+    sys.stdout.flush()
+    password = sys.stdin.readline().rstrip('\n')
+
+    if lssh.SSHConnect(host=sys.argv[1].split('@')[1], username=sys.argv[1].split('@')[0],password=password):
+        lssh.shell_loop()
