@@ -50,6 +50,7 @@ def register_command(name, func):
 # Register all built-in commands here
 def init():
     register_command("cd", cd)
+    register_command("exit", exit)
 
 def shell_loop():
     status = SHELL_STATUS_RUN
