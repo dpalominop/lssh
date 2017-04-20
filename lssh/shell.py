@@ -37,10 +37,21 @@ class LSSH():
         
         return True
 
-    def SSHCommand(self, command):
-        stdin, stdout, stderr = self.cl_ssh.exec_command(command)
+    def SSHCommand(self, cmd_tokens):
+        # Extract command name and arguments from tokens
+        cmd_name = cmd_tokens[0]
+        cmd_args = cmd_tokens[1:]
+
+        # If the command is a built-in command, invoke its function with arguments
+        if cmd_name == "exit":
+            self.SSHClose()
+            return SHELL_STATUS_STOP
+
+        stdin, stdout, stderr = self.cl_ssh.exec_command(' '.join(cmd_tokens))
         for line in stdout:
             print('... ' + line.strip('\n'))
+
+        return SHELL_STATUS_RUN
         
     def SSHClose(self):
         self.cl_ssh.close()
@@ -101,7 +112,10 @@ class LSSH():
                 cmd_tokens = self.tokenize(cmd)
 
                 #Excute the command and retrieve new status
-                status = self.execute(cmd_tokens)
+                ##status = self.execute(cmd_tokens)
+                status = self.SSHCommand(cmd_tokens)
+
+
             except (KeyboardInterrupt, SystemExit, EOFError):
                 print "KeyboardInterrupt"
             except:
