@@ -126,7 +126,11 @@ class LSSH():
 
 if __name__=="__main__":
     lssh = LSSH()
-    password = getpass(prompt=sys.argv[1]+' password: ')
 
-    if lssh.SSHConnect(host=sys.argv[1].split('@')[1], username=sys.argv[1].split('@')[0],password=password):
-        lssh.shell_loop()
+    if len(sys.argv) == 1:
+        print "usage: python -m lssh.shell username@host"
+    else:
+        password = getpass(prompt=sys.argv[1]+' password: ')
+
+        if lssh.SSHConnect(host=sys.argv[1].split('@')[1], username=sys.argv[1].split('@')[0],password=password):
+            lssh.shell_loop()
