@@ -1,2 +1,2 @@
-from lssh.builtins.cd import *
-from lssh.builtins.exit import *
+from src.builtins.cd import *
+from src.builtins.exit import *

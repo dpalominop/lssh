@@ -1,5 +1,5 @@
 import os
-from lssh.constants import *
+from src.constants import *
 
 def cd(args):
     if args:
