@@ -28,8 +28,8 @@ class lssh:
             self.client.close()
             self.transport.close()
 
-    def openShell(self):
-        self.shell = self.client.invoke_shell(term='vt100')
+    def openShell(self, term='vt100', width=80, height=24, width_pixels=0, height_pixels=0, environment=None):
+        self.shell = self.client.invoke_shell(term=term, width=width, height=height, width_pixels=width_pixels, height_pixels=height_pixels, environment=environment)
         self.printShell('')
 
     def verifyCommand(self, commands):
