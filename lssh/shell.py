@@ -18,7 +18,7 @@ class lssh:
         self.built_in_cmds = {}
 
         # Register all built-in commands here
-        self.register_command("exit", exit)
+        self.registerCommand("exit", exit)
 
         self.client = paramiko.client.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.client.AutoAddPolicy())
@@ -94,7 +94,7 @@ class lssh:
         return shlex.split(cmd)
 
     # Register a built-in function to built-in command hash map
-    def register_command(self, name, func):
+    def registerCommand(self, name, func):
         self.built_in_cmds[name] = func
 
     def shell_loop(self):
