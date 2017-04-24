@@ -36,8 +36,8 @@ class lssh:
         self.shell = self.client.invoke_shell(term='vt100')
         self.printShell('')
 
-    #def verifyCommand(self, commands):
-    #    return True
+    def verifyCommand(self, commands):
+        return True
 
     def sendCommand(self, command):
         if(self.shell):
@@ -175,10 +175,10 @@ class lssh:
                 #Excute the command and retrieve new status
                 ##status = self.execute(cmd_tokens)
                 #status = self.SSHCommand(cmd_tokens)
-                #if self.verifyCommand(cmd):
-                status = self.sendCommand(cmd)
-                #else:
-                #    print "Command Not Permitteds"
+                if self.verifyCommand(cmd):
+                    status = self.sendCommand(cmd)
+                else:
+                    print "Command Not Permitteds"
 
             except (KeyboardInterrupt, SystemExit, EOFError):
                 print "KeyboardInterrupt"
