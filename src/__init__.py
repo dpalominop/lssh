@@ -2,7 +2,7 @@
 #
 #  Copyright (C) 2017-2018 Daniel Palomino (@dpalominop) <dapalominop@gmail.com>
 #
-#  This file is part of lshell
+#  This file is part of lssh
 #
 #  This program is free software: you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
