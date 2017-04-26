@@ -1,11 +1,29 @@
+#!/usr/bin/env python
+#
+#  Copyright (C) 2017-2018 Daniel Palomino (@dpalominop) <dapalominop@gmail.com>
+#
+#  This file is part of lshell
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import sys
 import shlex
 import os
-from constants import *
-from builtins import *
+from src.constants import *
+from src.builtins import *
 
 import paramiko
-from getpass import getpass
 
 class lssh:
     shell = None
@@ -13,7 +31,7 @@ class lssh:
     transport = None
     directory = None
 
-    def __init__(self):
+    def __init__(self, userconf, args):
         # Hash map to store built-in function name and reference as key and value
         self.built_in_cmds = {}
 
@@ -32,8 +50,12 @@ class lssh:
         self.shell = self.client.invoke_shell(term=term, width=width, height=height, width_pixels=width_pixels, height_pixels=height_pixels, environment=environment)
         self.printShell('')
 
-    def verifyCommand(self, commands):
-        return True
+    def verifyCommand(self, command):
+        cmd_allowed=['cd','ls','pwd','exit']
+        if self.tokenize(command)[0] in cmd_allowed:
+            return True
+        else:
+            return False
 
     def sendCommand(self, command):
         if(self.shell):
@@ -101,34 +123,14 @@ class lssh:
         status = SHELL_STATUS_RUN
 
         while status == SHELL_STATUS_RUN:
-            try:
-                #Display a command prompt
-                sys.stdout.write(self.directory)
-                sys.stdout.flush()
+            #Display a command prompt
+            sys.stdout.write(self.directory)
+            sys.stdout.flush()
 
-                #Read command input
-                cmd = sys.stdin.readline()
+            #Read command input
+            cmd = sys.stdin.readline()
 
-                if self.verifyCommand(cmd):
-                    status = self.sendCommand(cmd)
-                else:
-                    print "Command Not Permitteds"
-
-            except (KeyboardInterrupt, SystemExit, EOFError):
-                print "KeyboardInterrupt"
-
-            except:
-                print "Error Unknown"
-
-
-if __name__=="__main__":
-    ssh = lssh()
-
-    if len(sys.argv) == 1:
-        print "usage: python -m lssh.shell username@host"
-    else:
-        password = getpass(prompt=sys.argv[1]+' password: ')
-
-        if ssh.startConnection(host=sys.argv[1].split('@')[1], username=sys.argv[1].split('@')[0], password=password):
-            ssh.openShell()
-            ssh.shell_loop()
+            if self.verifyCommand(cmd):
+                status = self.sendCommand(cmd)
+            else:
+                print "Command Not Permitteds"
