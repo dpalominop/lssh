@@ -53,9 +53,7 @@ class lssh:
         self.printShell('')
 
     def verifyCommand(self, command):
-        cmd_allowed=['cd','ls','pwd','exit']
-        #if self.tokenize(command)[0] in self.userconf['allowed']:
-        if self.tokenize(command)[0] in cmd_allowed:
+        if self.tokenize(command)[0] in self.userconf['allowed']:
             return True
         else:
             return False
