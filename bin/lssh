@@ -22,7 +22,7 @@
 import os
 import sys
 from getpass import getpass
-#from src.checkconfig import CheckConfig
+from src.checkconfig import CheckConfig
 from src.lssh import lssh
 #from src.lssh import lssh, LshellTimeOut
 
@@ -44,8 +44,9 @@ def main():
 
     password = getpass(prompt=args[0] + ' password: ')
 
-    #userconf = CheckConfig(args).returnconf()
-    userconf = ''
+    userconf = CheckConfig(args).returnconf()
+    print userconf
+    print args
     ssh = lssh(userconf, args)
     if ssh.startConnection(host=args[0].split('@')[1], username=args[0].split('@')[0], password=password):
         ssh.openShell()

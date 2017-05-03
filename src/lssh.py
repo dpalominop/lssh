@@ -32,6 +32,8 @@ class lssh:
     directory = None
 
     def __init__(self, userconf, args):
+        self.userconf = userconf
+
         # Hash map to store built-in function name and reference as key and value
         self.built_in_cmds = {}
 
@@ -52,6 +54,7 @@ class lssh:
 
     def verifyCommand(self, command):
         cmd_allowed=['cd','ls','pwd','exit']
+        #if self.tokenize(command)[0] in self.userconf['allowed']:
         if self.tokenize(command)[0] in cmd_allowed:
             return True
         else:
