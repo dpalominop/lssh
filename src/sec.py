@@ -21,7 +21,7 @@ import sys
 import re
 import os
 
-# import lshell specifics
+# import lssh specifics
 from src import utils
 
 
@@ -142,12 +142,12 @@ def check_path(line, conf, completion=None, ssh=None, strict=None):
 
 def check_secure(line, conf, strict=None, ssh=None):
     """This method is used to check the content on the typed command.
-    Its purpose is to forbid the user to user to override the lshell
+    Its purpose is to forbid the user to user to override the lssh
     command restrictions.
     The forbidden characters are placed in the 'forbidden' variable.
     Feel free to update the list. Emptying it would be quite useless..: )
 
-    A warning counter has been added, to kick out of lshell a user if he
+    A warning counter has been added, to kick out of lssh a user if he
     is warned more than X time (X being the 'warning_counter' variable).
     """
 

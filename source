@@ -1,0 +1,5 @@
+# source me in order to update your python path
+# and test using the local lssh files
+# this is useful when you have multiple lssh installations
+
+export PYTHONPATH=$PWD/
