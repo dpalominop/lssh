@@ -79,16 +79,18 @@ class lssh:
 
     def printShell(self, command):
         strdata = ''
-        while "$" not in strdata:
+        while not strdata.endswith('$ '):
             # Print data when available
             if self.shell != None and self.shell.recv_ready():
                 alldata = self.shell.recv(1024)
                 while self.shell.recv_ready():
                     alldata += self.shell.recv(1024)
-                strdata += str(alldata).encode("utf-8")
+                strdata += str(alldata)
 
+        #strdata = strdata.encode("utf-8")
         strdata.replace('\r', '')
         self.directory = strdata.rsplit('\n', 1)[1]
+
         print strdata.lstrip(command).rstrip(self.directory).strip('\n\r')
 
     def startConnection(self, host='192.168.0.1', username='username', password='password', port=22):

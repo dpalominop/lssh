@@ -814,7 +814,7 @@ class CheckConfig:
             configuration dict. This should then be used to reload the 
             configuration dynamically upon file changes
         """
-        print configfile
+        
         return os.path.getmtime(configfile)
 
     def returnconf(self):
