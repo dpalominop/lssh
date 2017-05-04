@@ -130,8 +130,10 @@ class lssh:
 
             #Read command input
             cmd = sys.stdin.readline()
-
-            if self.verifyCommand(cmd):
-                status = self.sendCommand(cmd)
+            if cmd == chr(10):
+                sys.stdout.flush()
             else:
-                print "Command Not Permitteds"
+                if self.verifyCommand(cmd):
+                    status = self.sendCommand(cmd)
+                else:
+                    print "Command Not Permitted"
