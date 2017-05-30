@@ -56,7 +56,7 @@ class lssh:
 
     def verifyCommand(self, command):
         if self.userconf['config_mtime'] != os.path.getmtime(self.userconf['configfile']):
-            from lshell.checkconfig import CheckConfig
+            from src.checkconfig import CheckConfig
             self.userconf = CheckConfig(['--config', \
                                      self.userconf['configfile']]).returnconf()
             #self.prompt = '%s:~$ ' % self.setprompt(self.userconf)
