@@ -39,6 +39,7 @@ class lssh:
 
         # Register all built-in commands here
         self.registerCommand("exit", exit)
+        self.registerCommand("vim", vim)
 
         self.client = paramiko.client.SSHClient()
         self.client.set_missing_host_key_policy(paramiko.client.AutoAddPolicy())
@@ -67,7 +68,7 @@ class lssh:
 
             # If the command is a built-in command, invoke its function with arguments
             if cmd_name in self.built_in_cmds:
-                return self.built_in_cmds[cmd_name](cmd_args)
+                return self.built_in_cmds[cmd_name](cmd_args, obj=self)
 
             self.shell.send(command)
             self.printShell(command)
@@ -99,6 +100,8 @@ class lssh:
             self.client.connect(host, username=username, password=password, look_for_keys=False)
             self.transport = paramiko.Transport((host, port))
             self.transport.connect(username=username, password=password)
+
+            self.sftp = paramiko.SFTPClient.from_transport(self.transport)
 
         except paramiko.BadHostKeyException:
             print "Server host key could not be verified."

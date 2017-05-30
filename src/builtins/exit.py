@@ -19,5 +19,5 @@
 
 from src.constants import *
 
-def exit(args):
+def exit(args, obj=None):
     return SHELL_STATUS_STOP

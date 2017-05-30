@@ -17,6 +17,18 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from src.builtins.cd import *
-from src.builtins.exit import *
-from src.builtins.vim import *
+import os
+from src.constants import *
+from subprocess import call, Popen, PIPE
+import datetime
+
+def vim(args, obj=None):
+    obj.sftp.get(args[0], '/tmp/'+args[0])
+
+    p = Popen('rvim /tmp/'+args[0],shell=True)
+    p.communicate()
+
+    obj.sftp.put('/tmp/'+args[0], args[0])
+    os.system('rm /tmp/'+args[0])
+
+    return SHELL_STATUS_RUN

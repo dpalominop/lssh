@@ -148,7 +148,7 @@ class CheckConfig:
         """ This method checks the usage. lssh.py must be called with a      \
         configuration file.
         If no configuration file is specified, it will set the configuration   \
-        file path to /etc/lssh.confelf.conf['allowed'].append('exit')
+        file path to /etc/lssh.conf self.conf['allowed'].append('exit')
         """
         # uncomment the following to set the -c/--config as mandatory argument
         #if '-c' not in arguments and '--config' not in arguments:

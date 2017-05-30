@@ -20,7 +20,7 @@
 import os
 from src.constants import *
 
-def cd(args):
+def cd(args, obj=None):
     if args:
         os.chdir(args[0])
     else:
