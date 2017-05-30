@@ -55,6 +55,14 @@ class lssh:
         self.printShell('')
 
     def verifyCommand(self, command):
+        if self.userconf['config_mtime'] != os.path.getmtime(self.userconf['configfile']):
+            from lshell.checkconfig import CheckConfig
+            self.userconf = CheckConfig(['--config', \
+                                     self.userconf['configfile']]).returnconf()
+            #self.prompt = '%s:~$ ' % self.setprompt(self.userconf)
+            self.log = self.userconf['logpath']
+
+
         if self.tokenize(command)[0] in self.userconf['allowed']:
             return True
         else:
