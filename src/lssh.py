@@ -48,6 +48,7 @@ class lssh:
         if(self.client != None):
             self.client.close()
             self.transport.close()
+            self.sftp.close()
 
     def openShell(self, term='vt100', width=80, height=24, width_pixels=0, height_pixels=0, environment=None):
         self.shell = self.client.invoke_shell(term=term, width=width, height=height, width_pixels=width_pixels, height_pixels=height_pixels, environment=environment)
@@ -142,3 +143,5 @@ class lssh:
                     status = self.sendCommand(cmd)
                 else:
                     print "Command Not Permitted"
+
+        self.closeConnection()

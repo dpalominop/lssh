@@ -20,7 +20,5 @@
 from src.constants import *
 
 def exit(args, obj=None):
-    obj.sftp.close()
-    obj.transport.close()
-    
+
     return SHELL_STATUS_STOP

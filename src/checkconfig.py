@@ -330,10 +330,10 @@ class CheckConfig:
             except IOError:
                 # uncomment the 2 following lines to warn if log file is not   \
                 # writable 
-                #sys.stderr.write('Warning: Cannot write in log file: '
-                #                                        'Permission denied.\n')
-                #sys.stderr.write('Warning: Actions will not be logged.\n')
-                pass
+                sys.stderr.write('Warning: Cannot write in log file: '
+                                                        'Permission denied.\n')
+                sys.stderr.write('Warning: Actions will not be logged.\n')
+                #pass
 
         self.conf['logpath'] = logger
         self.log = logger

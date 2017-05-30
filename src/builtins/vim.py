@@ -23,12 +23,22 @@ from subprocess import call, Popen, PIPE
 import datetime
 
 def vim(args, obj=None):
-    obj.sftp.get(args[0], '/tmp/'+args[0])
+    path = obj.directory.rsplit(":")[1].rsplit('$')[0]+'/'
+    print path
+    if path.startswith('~'):
+        path=path[2:]
+    
+    print 'path: ', path
+    try:
+        obj.sftp.get(path+args[0], '/tmp/'+args[0])
+        p = Popen('rvim /tmp/'+args[0],shell=True)
+        p.communicate()
 
-    p = Popen('rvim /tmp/'+args[0],shell=True)
-    p.communicate()
+        obj.sftp.put('/tmp/'+args[0], path+args[0])
+        os.system('rm /tmp/'+args[0])
+    except IOError:
+        print "File not exists"
 
-    obj.sftp.put('/tmp/'+args[0], args[0])
-    os.system('rm /tmp/'+args[0])
+    
 
     return SHELL_STATUS_RUN
