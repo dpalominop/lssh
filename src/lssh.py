@@ -29,16 +29,9 @@ from binascii import hexlify
 import getpass
 import select
 import socket
-import sys
 import time
 import traceback
 from paramiko.py3compat import input, u
-import paramiko
-# try:
-#     import interactive
-# except ImportError:
-#     from src import interactive
-
 
 # windows does not have termios...
 try:
@@ -280,8 +273,11 @@ class lssh:
                 key = paramiko.DSSKey.from_private_key_file(path, password)
             self.transport.auth_publickey(username, key)
         else:
-            pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
-            self.transport.auth_password(username, pw)
+            try:
+                pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
+                self.transport.auth_password(username, pw)
+            except paramiko.AuthenticationException:
+                sys.exit(1)
 
     def startConnection(self):
         try:
