@@ -24,6 +24,30 @@ from src.constants import *
 from src.builtins import *
 
 import paramiko
+import base64
+from binascii import hexlify
+import getpass
+import select
+import socket
+import sys
+import time
+import traceback
+from paramiko.py3compat import input, u
+import paramiko
+# try:
+#     import interactive
+# except ImportError:
+#     from src import interactive
+
+
+# windows does not have termios...
+try:
+    import termios
+    import tty
+    has_termios = True
+except ImportError:
+    has_termios = False
+
 
 class lssh:
     shell = None
@@ -31,9 +55,9 @@ class lssh:
     transport = None
     directory = None
 
-    def __init__(self, userconf, args):
+    def __init__(self, userconf, credentials):
         self.userconf = userconf
-
+        self.credentials = credentials
         # Hash map to store built-in function name and reference as key and value
         self.built_in_cmds = {}
 
@@ -41,14 +65,22 @@ class lssh:
         self.registerCommand("exit", exit)
         self.registerCommand("vim", vim)
 
-        self.client = paramiko.client.SSHClient()
-        self.client.set_missing_host_key_policy(paramiko.client.AutoAddPolicy())
+        #self.client = paramiko.client.SSHClient()
+        #self.client.set_missing_host_key_policy(paramiko.client.AutoAddPolicy())
+
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.sock.connect((self.credentials['hostname'], self.credentials['port']))
+        except Exception as e:
+            print('*** Connect failed: ' + str(e))
+            traceback.print_exc()
+            sys.exit(1)
 
     def closeConnection(self):
         if(self.client != None):
             self.client.close()
             self.transport.close()
-            self.sftp.close()
+            #self.sftp.close()
 
     def openShell(self, term='vt100', width=80, height=24, width_pixels=0, height_pixels=0, environment=None):
         self.shell = self.client.invoke_shell(term=term, width=width, height=height, width_pixels=width_pixels, height_pixels=height_pixels, environment=environment)
@@ -103,29 +135,239 @@ class lssh:
 
         print strdata.lstrip(command).rstrip(self.directory).strip('\n\r')
 
-    def startConnection(self, host='192.168.0.1', username='username', password='password', port=22):
+    def interactive_shell(self, chan):
+        if has_termios:
+            self.posix_shell(chan)
+        else:
+            self.windows_shell(chan)
+
+
+    def posix_shell(self, chan):
+        import select
         
+        oldtty = termios.tcgetattr(sys.stdin)
+        command = ''
+        tab = False
         try:
-            self.client.connect(host, username=username, password=password, look_for_keys=False)
-            self.transport = paramiko.Transport((host, port))
-            self.transport.connect(username=username, password=password)
+            tty.setraw(sys.stdin.fileno())
+            tty.setcbreak(sys.stdin.fileno())
+            chan.settimeout(0.0)
 
-            self.sftp = paramiko.SFTPClient.from_transport(self.transport)
+            while True:
+                r, w, e = select.select([chan, sys.stdin], [], [])
+                if chan in r:
+                    try:
+                        x = u(chan.recv(1024))
+                        if len(x) == 0:
+                            sys.stdout.write('\r\n*** EOF\r\n')
+                            break
+                        
+                        if tab:
+                            tab = False
+                            if '\n' not in x:
+                                command = command + x
 
-        except paramiko.BadHostKeyException:
-            print "Server host key could not be verified."
-            return False
-        except paramiko.AuthenticationException:
-            print "Authentication Failed"
-            return False
-        except paramiko.SSHException:
-            print "Any other error connecting or establishing an SSH session"
-            return False
-        except:
-            print "Other Error, maybe in socket creation."
-            return False
+                        sys.stdout.write(x)
+                        sys.stdout.flush()
+                    except socket.timeout:
+                        pass
+
+                if sys.stdin in r:
+                    x = sys.stdin.read(1)
+                    if len(x) == 0:
+                        sys.stdout.write('\r\n***--------')
+                        break
+                    
+                    if x == chr(13): #Carriage Return
+                        #sys.stdout.write('\ncomando:')
+                        #sys.stdout.write(command)
+                        #sys.stdout.flush()
+                        if len(command) and not self.verifyCommand(command):
+                            for i in command:
+                                chan.send(chr(127))
+                            sys.stdout.flush()
+                            
+                        command = ''
+                    elif x == chr(9): #Horizontal Tab
+                        tab = True
+                    elif x == chr(127): #BackSpace
+                        command = command[:-1]
+                    else:
+                        command = command + x
+                    
+                    chan.send(x)
+
+        finally:
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
+
         
-        return True
+    # thanks to Mike Looijmans for this code
+    def windows_shell(self,chan):
+        import threading
+
+        sys.stdout.write("Line-buffered terminal emulation. Press F6 or ^Z to send EOF.\r\n\r\n")
+            
+        def writeall(sock):
+            while True:
+                data = sock.recv(256)
+                if not data:
+                    sys.stdout.write('\r\n*** EOF ***\r\n\r\n')
+                    sys.stdout.flush()
+                    break
+                sys.stdout.write(data)
+                sys.stdout.flush()
+            
+        writer = threading.Thread(target=writeall, args=(chan,))
+        writer.start()
+            
+        try:
+            while True:
+                d = sys.stdin.read(1)
+                if not d:
+                    break
+                chan.send(d)
+        except EOFError:
+            # user hit ^Z or F6
+            pass
+
+    def agent_auth(self, transport, username):
+        """
+        Attempt to authenticate to the given transport using any of the private
+        keys available from an SSH agent.
+        """
+        
+        agent = paramiko.Agent()
+        agent_keys = agent.get_keys()
+        if len(agent_keys) == 0:
+            return
+            
+        for key in agent_keys:
+            print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
+            try:
+                transport.auth_publickey(username, key)
+                print('... success!')
+                return
+            except paramiko.SSHException:
+                print('... nope.')
+
+
+    def manual_auth(self, username, hostname):
+        default_auth = 'p'
+        auth = input('Auth by (p)assword, (r)sa key, or (d)ss key? [%s] ' % default_auth)
+        if len(auth) == 0:
+            auth = default_auth
+
+        if auth == 'r':
+            default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+            path = input('RSA key [%s]: ' % default_path)
+            if len(path) == 0:
+                path = default_path
+            try:
+                key = paramiko.RSAKey.from_private_key_file(path)
+            except paramiko.PasswordRequiredException:
+                password = getpass.getpass('RSA key password: ')
+                key = paramiko.RSAKey.from_private_key_file(path, password)
+            self.transport.auth_publickey(username, key)
+        elif auth == 'd':
+            default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_dsa')
+            path = input('DSS key [%s]: ' % default_path)
+            if len(path) == 0:
+                path = default_path
+            try:
+                key = paramiko.DSSKey.from_private_key_file(path)
+            except paramiko.PasswordRequiredException:
+                password = getpass.getpass('DSS key password: ')
+                key = paramiko.DSSKey.from_private_key_file(path, password)
+            self.transport.auth_publickey(username, key)
+        else:
+            pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
+            self.transport.auth_password(username, pw)
+
+    def startConnection(self):
+        try:
+            self.transport = paramiko.Transport(self.sock)
+            #self.sftp = paramiko.SFTPClient.from_transport(self.transport)
+
+            try:
+                self.transport.start_client()
+            except paramiko.SSHException:
+                print('*** SSH negotiation failed.')
+                sys.exit(1)
+
+            try:
+                keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
+            except IOError:
+                try:
+                    keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
+                except IOError:
+                    print('*** Unable to open host keys file')
+                    keys = {}
+
+            # check server's host key -- this is important.
+            key = self.transport.get_remote_server_key()
+            if self.credentials['hostname'] not in keys:
+                print('*** WARNING: Unknown host key!')
+            elif key.get_name() not in keys[self.credentials['hostname']]:
+                print('*** WARNING: Unknown host key!')
+            elif keys[self.credentials['hostname']][key.get_name()] != key:
+                print('*** WARNING: Host key has changed!!!')
+                sys.exit(1)
+            else:
+                print('*** Host key OK.')
+
+            # get username
+            if self.credentials['username'] == '':
+                default_username = getpass.getuser()
+                self.credentials['username'] = input('Username [%s]: ' % default_username)
+                if len(self.credentials['username']) == 0:
+                    self.credentials['username'] = default_username
+
+            self.agent_auth(self.transport, self.credentials['username'])
+            if not self.transport.is_authenticated():
+                self.manual_auth(self.credentials['username'], self.credentials['hostname'])
+            if not self.transport.is_authenticated():
+                print('*** Authentication failed. :(')
+                self.transport.close()
+                sys.exit(1)
+
+            chan = self.transport.open_session()
+            chan.get_pty()
+            chan.invoke_shell()
+            print('*** Here we go!\n')
+            self.interactive_shell(chan)
+            chan.close()
+            self.transport.close()
+
+        except Exception as e:
+            print('*** Caught exception: ' + str(e.__class__) + ': ' + str(e))
+            traceback.print_exc()
+            try:
+                self.transport.close()
+            except:
+                pass
+            sys.exit(1)
+
+        # try:
+        #     self.client.connect(host, username=username, password=password, look_for_keys=False)
+        #     self.transport = paramiko.Transport((host, port))
+        #     self.transport.connect(username=username, password=password)
+
+        #     self.sftp = paramiko.SFTPClient.from_transport(self.transport)
+
+        # except paramiko.BadHostKeyException:
+        #     print "Server host key could not be verified."
+        #     return False
+        # except paramiko.AuthenticationException:
+        #     print "Authentication Failed"
+        #     return False
+        # except paramiko.SSHException:
+        #     print "Any other error connecting or establishing an SSH session"
+        #     return False
+        # except:
+        #     print "Other Error, maybe in socket creation."
+        #     return False
+        
+        # return True
 
     def tokenize(self, cmd):
         return shlex.split(cmd)

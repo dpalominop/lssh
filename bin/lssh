@@ -30,24 +30,44 @@ from src.lssh import lssh
 def main():
     """ main function """
 
-    if len(sys.argv) == 1:
-        print "usage: python -m lssh.shell username@host"
-        return
-
-    # set SHELL and get LSSH_ARGS env variables
-    os.environ['SHELL'] = os.path.realpath(sys.argv[0])
-
-    if 'LSSH_ARGS' in os.environ:
-        args = sys.argv[1:] + eval(os.environ['LSSH_ARGS'])
+    args={
+        'username':'',
+        'port':22,
+        'hostname':''
+    }
+    if len(sys.argv) > 1:
+        args['hostname'] = sys.argv[1]
+        if args['hostname'].find('@') >= 0:
+            args['username'], args['hostname'] = args['hostname'].split('@')
     else:
-        args = sys.argv[1:]
+        args['hostname'] = input('Hostname: ')
+    if len(args['hostname']) == 0:
+        print('*** Hostname required.')
+        sys.exit(1)
 
-    password = getpass(prompt=args[0] + ' password: ')
+    port = 22
+    if args['hostname'].find(':') >= 0:
+        args['hostname'], portstr = args['hostname'].split(':')
+        args['port'] = int(portstr)
+    print args
+    # set SHELL and get LSSH_ARGS env variables
+    ##os.environ['SHELL'] = os.path.realpath(sys.argv[0])
 
-    userconf = CheckConfig(args).returnconf()
+    ##if 'LSSH_ARGS' in os.environ:
+    ##    args = sys.argv[1:] + eval(os.environ['LSSH_ARGS'])
+    ##else:
+    ##    args = sys.argv[1:]
+
+    #password = getpass(prompt=args[0] + ' password: ')
+
+    #args=username+'@'+hostname+':'+str(port)
+    #args=''
+    userconf = CheckConfig('').returnconf()
 
     ssh = lssh(userconf, args)
-    if ssh.startConnection(host=args[0].split('@')[1], username=args[0].split('@')[0], password=password):
+
+
+    if ssh.startConnection():
         ssh.openShell()
 
         try:
