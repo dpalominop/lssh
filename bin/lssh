@@ -21,7 +21,6 @@
 
 import os
 import sys
-from getpass import getpass
 from src.checkconfig import CheckConfig
 from src.lssh import lssh
 #from src.lssh import lssh, LshellTimeOut
@@ -45,27 +44,13 @@ def main():
         print('*** Hostname required.')
         sys.exit(1)
 
-    port = 22
     if args['hostname'].find(':') >= 0:
         args['hostname'], portstr = args['hostname'].split(':')
         args['port'] = int(portstr)
-    print args
-    # set SHELL and get LSSH_ARGS env variables
-    ##os.environ['SHELL'] = os.path.realpath(sys.argv[0])
 
-    ##if 'LSSH_ARGS' in os.environ:
-    ##    args = sys.argv[1:] + eval(os.environ['LSSH_ARGS'])
-    ##else:
-    ##    args = sys.argv[1:]
-
-    #password = getpass(prompt=args[0] + ' password: ')
-
-    #args=username+'@'+hostname+':'+str(port)
-    #args=''
     userconf = CheckConfig('').returnconf()
 
     ssh = lssh(userconf, args)
-
 
     if ssh.startConnection():
         ssh.openShell()
