@@ -25,44 +25,37 @@ from src.checkconfig import CheckConfig
 from src.lssh import lssh
 #from src.lssh import lssh, LshellTimeOut
 
-
-def main():
-    """ main function """
-
-    args={
+def getCredentials(argv):
+    """ Get Conection Credentials: hostname, username and port """
+    credentials={
         'username':'',
         'port':22,
         'hostname':''
     }
-    if len(sys.argv) > 1:
-        args['hostname'] = sys.argv[1]
-        if args['hostname'].find('@') >= 0:
-            args['username'], args['hostname'] = args['hostname'].split('@')
+    if len(argv) > 1:
+        credentials['hostname'] = argv[1]
+        if credentials['hostname'].find('@') >= 0:
+            credentials['username'], credentials['hostname'] = credentials['hostname'].split('@')
     else:
-        args['hostname'] = input('Hostname: ')
-    if len(args['hostname']) == 0:
+        credentials['hostname'] = input('Hostname: ')
+    if len(credentials['hostname']) == 0:
         print('*** Hostname required.')
         sys.exit(1)
 
-    if args['hostname'].find(':') >= 0:
-        args['hostname'], portstr = args['hostname'].split(':')
-        args['port'] = int(portstr)
+    if credentials['hostname'].find(':') >= 0:
+        credentials['hostname'], portstr = credentials['hostname'].split(':')
+        credentials['port'] = int(portstr)
 
+    return credentials
+
+def main():
+    """ Main Function """
+
+    credentials = getCredentials(sys.argv)
     userconf = CheckConfig('').returnconf()
 
-    ssh = lssh(userconf, args)
-
-    if ssh.startConnection():
-        ssh.openShell()
-
-        try:
-            ssh.shell_loop()
-        except (KeyboardInterrupt, EOFError, SystemExit):
-            sys.stdout.write('\nExited on user request\n')
-            sys.exit(0)
-        #except LshellTimeOut:
-        #    userconf['logpath'].error('Timer expired')
-        #    sys.stdout.write('\nTime is up.\n')
+    ssh = lssh(userconf, credentials)
+    ssh.startConnection()
 
 if __name__ == '__main__':
     main()

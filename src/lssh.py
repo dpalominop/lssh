@@ -277,6 +277,7 @@ class lssh:
                 pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
                 self.transport.auth_password(username, pw)
             except paramiko.AuthenticationException:
+                print('*** Authentication failed. ***')
                 sys.exit(1)
 
     def startConnection(self):
@@ -322,7 +323,7 @@ class lssh:
             if not self.transport.is_authenticated():
                 self.manual_auth(self.credentials['username'], self.credentials['hostname'])
             if not self.transport.is_authenticated():
-                print('*** Authentication failed. :(')
+                print('*** Authentication failed. ***')
                 self.transport.close()
                 sys.exit(1)
 
