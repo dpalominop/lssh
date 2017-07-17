@@ -21,7 +21,6 @@
 
 import os
 import sys
-from src.checkconfig import CheckConfig
 from src.lssh import lssh
 #from src.lssh import lssh, LshellTimeOut
 
@@ -52,9 +51,8 @@ def main():
     """ Main Function """
 
     credentials = getCredentials(sys.argv)
-    userconf = CheckConfig('').returnconf()
 
-    ssh = lssh(userconf, credentials)
+    ssh = lssh(credentials)
     ssh.startConnection()
 
 if __name__ == '__main__':

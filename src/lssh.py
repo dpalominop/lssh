@@ -22,6 +22,7 @@ import shlex
 import os
 from src.constants import *
 from src.builtins import *
+from src.checkconfigdb import CheckConfig
 
 import paramiko
 import base64
@@ -48,9 +49,9 @@ class lssh:
     transport = None
     directory = None
 
-    def __init__(self, userconf, credentials):
-        self.userconf = userconf
+    def __init__(self, credentials):
         self.credentials = credentials
+        self.userconf = CheckConfig(self.credentials).returnconf()
         # Hash map to store built-in function name and reference as key and value
         self.built_in_cmds = {}
 
@@ -80,12 +81,10 @@ class lssh:
         self.printShell('')
 
     def verifyCommand(self, command):
-        if self.userconf['config_mtime'] != os.path.getmtime(self.userconf['configfile']):
-            from src.checkconfig import CheckConfig
-            self.userconf = CheckConfig(['--config', \
-                                     self.userconf['configfile']]).returnconf()
-            #self.prompt = '%s:~$ ' % self.setprompt(self.userconf)
-            self.log = self.userconf['logpath']
+        #if self.userconf['config_mtime'] != os.path.getmtime(self.userconf['configfile']):
+        self.userconf = CheckConfig(self.credentials).returnconf()
+        #self.prompt = '%s:~$ ' % self.setprompt(self.userconf)
+        self.log = self.userconf['logpath']
 
 
         if self.tokenize(command)[0] in self.userconf['allowed']:
@@ -137,7 +136,7 @@ class lssh:
 
     def posix_shell(self, chan):
         import select
-        
+
         oldtty = termios.tcgetattr(sys.stdin)
         command = ''
         tab = False
@@ -154,7 +153,7 @@ class lssh:
                         if len(x) == 0:
                             sys.stdout.write('\r\n*** EOF\r\n')
                             break
-                        
+
                         if tab:
                             tab = False
                             if '\n' not in x:
@@ -170,7 +169,7 @@ class lssh:
                     if len(x) == 0:
                         sys.stdout.write('\r\n***--------')
                         break
-                    
+
                     if x == chr(13): #Carriage Return
                         #sys.stdout.write('\ncomando:')
                         #sys.stdout.write(command)
@@ -179,7 +178,7 @@ class lssh:
                             for i in command:
                                 chan.send(chr(127))
                             sys.stdout.flush()
-                            
+
                         command = ''
                     elif x == chr(9): #Horizontal Tab
                         tab = True
@@ -187,19 +186,19 @@ class lssh:
                         command = command[:-1]
                     else:
                         command = command + x
-                    
+
                     chan.send(x)
 
         finally:
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
 
-        
+
     # thanks to Mike Looijmans for this code
     def windows_shell(self,chan):
         import threading
 
         sys.stdout.write("Line-buffered terminal emulation. Press F6 or ^Z to send EOF.\r\n\r\n")
-            
+
         def writeall(sock):
             while True:
                 data = sock.recv(256)
@@ -209,10 +208,10 @@ class lssh:
                     break
                 sys.stdout.write(data)
                 sys.stdout.flush()
-            
+
         writer = threading.Thread(target=writeall, args=(chan,))
         writer.start()
-            
+
         try:
             while True:
                 d = sys.stdin.read(1)
@@ -228,12 +227,12 @@ class lssh:
         Attempt to authenticate to the given transport using any of the private
         keys available from an SSH agent.
         """
-        
+
         agent = paramiko.Agent()
         agent_keys = agent.get_keys()
         if len(agent_keys) == 0:
             return
-            
+
         for key in agent_keys:
             print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
             try:
@@ -363,7 +362,7 @@ class lssh:
         # except:
         #     print "Other Error, maybe in socket creation."
         #     return False
-        
+
         # return True
 
     def tokenize(self, cmd):
