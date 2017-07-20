@@ -1,5 +1,0 @@
-default: &default
-  adapter: postgres
-  database: sa_dev
-  username: sa
-  password: password
