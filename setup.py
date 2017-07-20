@@ -17,7 +17,8 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup, find_packages
 
 # import lssh specifics
 from src.variables import __version__
@@ -30,7 +31,7 @@ if __name__ == '__main__':
           long_description="""Limited Secure SHell (lssh) is lets you restrict the \
 environment of any user. It provides an easily configurable shell: just \
 choose a list of allowed commands for every limited account.""",
-          author='Daniel Palomin',
+          author='Daniel Palomino',
           author_email='dapalominop@gmail.com',
           maintainer='Daniel Palomino',
           maintainer_email='dapalominop@gmail.com',
@@ -40,23 +41,21 @@ choose a list of allowed commands for every limited account.""",
           platforms='UNIX',
           scripts=['bin/lssh'],
           package_dir={'lssh': 'lssh'},
-          packages=['lssh'],
+          #packages=['src'],
+          packages=find_packages(),
           data_files=[('/etc', ['etc/lssh.conf']),
-                      ('/etc/logrotate.d', ['etc/logrotate.d/lssh']),
-                      ('share/doc/lssh', ['README.md',
-                                            'COPYING',
-                                            'CHANGES']),
-                      ('share/man/man1/', ['man/lssh.1'])],
+                      ('share/doc/lssh', ['README.md'])],
           classifiers=[
             'Development Status :: 5 - Production/Stable',
-            'Environment :: Console'
-            'Intended Audience :: Advanced End Users',
+            'Environment :: Console',
+            #'Intended Audience :: Advanced End Users',
             'Intended Audience :: System Administrators',
-            'License :: OSI Approved :: GNU General Public License v3',
+            #'License :: OSI Approved :: GNU General Public License v3',
             'Operating System :: POSIX',
             'Programming Language :: Python',
             'Topic :: Security',
-            'Topic :: System Shells',
+            #'Topic :: System Shells',
             'Topic :: Terminals'
             ],
+          install_requires=['paramiko','psycopg2'],
           )
