@@ -19,7 +19,7 @@
 
 import sys
 
-__version__ = "0.2"
+__version__ = "0.2.1"
 
 # Required config variable list per user
 required_config = ['allowed', 'forbidden', 'warning_counter']
