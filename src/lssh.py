@@ -66,8 +66,8 @@ class lssh:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.credentials['hostname'], self.credentials['port']))
         except Exception as e:
-            print('*** Connect failed: ' + str(e))
-            traceback.print_exc()
+            print '*** Connect failed: ' + e.args[1]
+            #traceback.print_exc()
             sys.exit(1)
 
     def closeConnection(self):
@@ -301,6 +301,7 @@ class lssh:
 
             # check server's host key -- this is important.
             key = self.transport.get_remote_server_key()
+            #print "remote server key: ", key
             if self.credentials['hostname'] not in keys:
                 print('*** WARNING: Unknown host key!')
             elif key.get_name() not in keys[self.credentials['hostname']]:

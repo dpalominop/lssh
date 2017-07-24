@@ -36,7 +36,12 @@ def getCredentials(argv):
         if credentials['hostname'].find('@') >= 0:
             credentials['username'], credentials['hostname'] = credentials['hostname'].split('@')
     else:
-        credentials['hostname'] = raw_input('Hostname: ')
+        try:
+            credentials['hostname'] = raw_input('Hostname: ')
+        except:
+            print "\n"
+            sys.exit(1)
+
     if len(credentials['hostname']) == 0:
         print('*** Hostname required.')
         sys.exit(1)

@@ -46,16 +46,14 @@ required_config = ['allowed', 'forbidden', 'warning_counter']
 # on *Linux sys.exec_prefix = '/usr' and default path must be in '/etc'
 # on *BSD sys.exec_prefix = '/usr/{pkg,local}/' and default path
 # is '/usr/{pkg,local}/etc'
-if 'PYTHONPATH' in os.environ:
-    configfile = os.path.realpath('etc/lssh.conf')
+
+if sys.exec_prefix != '/usr':
+    # for *BSD
+    conf_prefix = sys.exec_prefix
 else:
-    if sys.exec_prefix != '/usr':
-        # for *BSD
-        conf_prefix = sys.exec_prefix
-    else:
-        # for *Linux
-        conf_prefix = ''
-    configfile = conf_prefix + '/etc/lssh.conf'
+    # for *Linux
+    conf_prefix = ''
+configfile = conf_prefix + '/etc/lssh.conf'
 
 # history file
 history_file = ".lhistory"
