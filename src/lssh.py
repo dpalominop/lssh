@@ -234,50 +234,51 @@ class lssh:
             return
 
         for key in agent_keys:
-            print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
+            #print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
             try:
                 transport.auth_publickey(username, key)
                 print('... success!')
                 return
             except paramiko.SSHException:
-                print('... nope.')
+                #print('... nope.')
+                pass
 
 
     def manual_auth(self, username, hostname):
-        default_auth = 'p'
-        auth = input('Auth by (p)assword, (r)sa key, or (d)ss key? [%s] ' % default_auth)
-        if len(auth) == 0:
-            auth = default_auth
+            # default_auth = 'p'
+            # auth = input('Auth by (p)assword, (r)sa key, or (d)ss key? [%s] ' % default_auth)
+            # if len(auth) == 0:
+            #     auth = default_auth
 
-        if auth == 'r':
-            default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
-            path = input('RSA key [%s]: ' % default_path)
-            if len(path) == 0:
-                path = default_path
-            try:
-                key = paramiko.RSAKey.from_private_key_file(path)
-            except paramiko.PasswordRequiredException:
-                password = getpass.getpass('RSA key password: ')
-                key = paramiko.RSAKey.from_private_key_file(path, password)
-            self.transport.auth_publickey(username, key)
-        elif auth == 'd':
-            default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_dsa')
-            path = input('DSS key [%s]: ' % default_path)
-            if len(path) == 0:
-                path = default_path
-            try:
-                key = paramiko.DSSKey.from_private_key_file(path)
-            except paramiko.PasswordRequiredException:
-                password = getpass.getpass('DSS key password: ')
-                key = paramiko.DSSKey.from_private_key_file(path, password)
-            self.transport.auth_publickey(username, key)
-        else:
-            try:
-                pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
-                self.transport.auth_password(username, pw)
-            except paramiko.AuthenticationException:
-                print('*** Authentication failed. ***')
-                sys.exit(1)
+        # if auth == 'r':
+        #     default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
+        #     path = input('RSA key [%s]: ' % default_path)
+        #     if len(path) == 0:
+        #         path = default_path
+        #     try:
+        #         key = paramiko.RSAKey.from_private_key_file(path)
+        #     except paramiko.PasswordRequiredException:
+        #         password = getpass.getpass('RSA key password: ')
+        #         key = paramiko.RSAKey.from_private_key_file(path, password)
+        #     self.transport.auth_publickey(username, key)
+        # elif auth == 'd':
+        #     default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_dsa')
+        #     path = input('DSS key [%s]: ' % default_path)
+        #     if len(path) == 0:
+        #         path = default_path
+        #     try:
+        #         key = paramiko.DSSKey.from_private_key_file(path)
+        #     except paramiko.PasswordRequiredException:
+        #         password = getpass.getpass('DSS key password: ')
+        #         key = paramiko.DSSKey.from_private_key_file(path, password)
+        #     self.transport.auth_publickey(username, key)
+        # else:
+        try:
+            pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
+            self.transport.auth_password(username, pw)
+        except paramiko.AuthenticationException:
+            print('*** Authentication failed. ***')
+            sys.exit(1)
 
     def startConnection(self):
         try:
@@ -301,7 +302,7 @@ class lssh:
 
             # check server's host key -- this is important.
             key = self.transport.get_remote_server_key()
-            #print "remote server key: ", key
+
             if self.credentials['hostname'] not in keys:
                 print('*** WARNING: Unknown host key!')
             elif key.get_name() not in keys[self.credentials['hostname']]:
@@ -330,7 +331,7 @@ class lssh:
             chan = self.transport.open_session()
             chan.get_pty()
             chan.invoke_shell()
-            print('*** Here we go!\n')
+
             self.interactive_shell(chan)
             chan.close()
             self.transport.close()
