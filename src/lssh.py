@@ -183,7 +183,6 @@ class lssh:
 
                         # remote close
                         if len(x) == 0:
-                            # sys.stdout.write('\r\n*** EOF\r\n')
                             is_alive = False
                         else:
                             # rely on 'print' to correctly handle encoding
@@ -192,8 +191,6 @@ class lssh:
                                 if '\n' not in x:
                                     command = command + x
 
-                            # sys.stdout.write(x)
-                            # sys.stdout.flush()
                             # rely on 'print' to correctly handle encoding
                             print(x, end='')
                             sys.stdout.flush()
@@ -211,12 +208,9 @@ class lssh:
                     # use an os.read to prevent nasty buffering problem with shell
                     # history
                     x = os.read(stdin_fileno, 1)
-                    # x = sys.stdin.read(1)
 
                     # if this side of the connection closes, shut down gracefully
                     if len(x) == 0:
-                        # sys.stdout.write('\r\n***--------')
-                        # break
                         is_alive = False
                     else:
 
@@ -292,7 +286,7 @@ class lssh:
             #print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
             try:
                 transport.auth_publickey(username, key)
-                print('... success!')
+                os.write(sys.stdout.fileno(), '... success!\n')
                 return
             except paramiko.SSHException:
                 #print('... nope.')
@@ -300,50 +294,21 @@ class lssh:
 
 
     def manual_auth(self, username, hostname):
-            # default_auth = 'p'
-            # auth = input('Auth by (p)assword, (r)sa key, or (d)ss key? [%s] ' % default_auth)
-            # if len(auth) == 0:
-            #     auth = default_auth
-
-        # if auth == 'r':
-        #     default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
-        #     path = input('RSA key [%s]: ' % default_path)
-        #     if len(path) == 0:
-        #         path = default_path
-        #     try:
-        #         key = paramiko.RSAKey.from_private_key_file(path)
-        #     except paramiko.PasswordRequiredException:
-        #         password = getpass.getpass('RSA key password: ')
-        #         key = paramiko.RSAKey.from_private_key_file(path, password)
-        #     self.transport.auth_publickey(username, key)
-        # elif auth == 'd':
-        #     default_path = os.path.join(os.environ['HOME'], '.ssh', 'id_dsa')
-        #     path = input('DSS key [%s]: ' % default_path)
-        #     if len(path) == 0:
-        #         path = default_path
-        #     try:
-        #         key = paramiko.DSSKey.from_private_key_file(path)
-        #     except paramiko.PasswordRequiredException:
-        #         password = getpass.getpass('DSS key password: ')
-        #         key = paramiko.DSSKey.from_private_key_file(path, password)
-        #     self.transport.auth_publickey(username, key)
-        # else:
         try:
             pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
             self.transport.auth_password(username, pw)
         except paramiko.AuthenticationException:
-            print('*** Authentication failed. ***')
+            os.write(sys.stdout.fileno(), '*** Authentication failed. ***\n')
             sys.exit(1)
 
     def startConnection(self):
         try:
             self.transport = paramiko.Transport(self.sock)
-            #self.sftp = paramiko.SFTPClient.from_transport(self.transport)
 
             try:
                 self.transport.start_client()
             except paramiko.SSHException:
-                print('*** SSH negotiation failed.')
+                os.write(sys.stdout.fileno(), '*** SSH negotiation failed.\n')
                 sys.exit(1)
 
             try:
@@ -352,26 +317,27 @@ class lssh:
                 try:
                     keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
                 except IOError:
-                    print('*** Unable to open host keys file')
+                    os.write(sys.stdout.fileno(), '*** Unable to open host keys file\n')
                     keys = {}
 
             # check server's host key -- this is important.
             key = self.transport.get_remote_server_key()
 
             if self.credentials['hostname'] not in keys:
-                print('*** WARNING: Unknown host key!')
+                os.write(sys.stdout.fileno(), '*** WARNING: Unknown host key!\n')
             elif key.get_name() not in keys[self.credentials['hostname']]:
-                print('*** WARNING: Unknown host key!')
+                os.write(sys.stdout.fileno(), '*** WARNING: Unknown host key!\n')
             elif keys[self.credentials['hostname']][key.get_name()] != key:
-                print('*** WARNING: Host key has changed!!!')
+                os.write(sys.stdout.fileno(), '*** WARNING: Host key has changed!!!\n')
                 sys.exit(1)
             else:
-                print('*** Host key OK.')
+                os.write(sys.stdout.fileno(), '*** Host key OK.\n')
 
             # get username
             if self.credentials['username'] == '':
                 default_username = getpass.getuser()
-                self.credentials['username'] = input('Username [%s]: ' % default_username)
+                os.write(sys.stdout.fileno(), 'Username [%s]: ' % default_username)
+                self.credentials['username'] = input()
 
                 if len(self.credentials['username']) == 0:
                     self.credentials['username'] = default_username
@@ -380,7 +346,7 @@ class lssh:
             if not self.transport.is_authenticated():
                 self.manual_auth(self.credentials['username'], self.credentials['hostname'])
             if not self.transport.is_authenticated():
-                print('*** Authentication failed. ***')
+                os.write(sys.stdout.fileno(), '*** Authentication failed. ***\n')
                 self.transport.close()
                 sys.exit(1)
 
@@ -393,35 +359,13 @@ class lssh:
             self.transport.close()
 
         except Exception as e:
-            print('*** Caught exception: ' + str(e.__class__) + ': ' + str(e))
+            os.write(sys.stdout.fileno(), '*** Caught exception: ' + str(e.__class__) + ': ' + str(e) + '\n')
             traceback.print_exc()
             try:
                 self.transport.close()
             except:
                 pass
             sys.exit(1)
-
-        # try:
-        #     self.client.connect(host, username=username, password=password, look_for_keys=False)
-        #     self.transport = paramiko.Transport((host, port))
-        #     self.transport.connect(username=username, password=password)
-
-        #     self.sftp = paramiko.SFTPClient.from_transport(self.transport)
-
-        # except paramiko.BadHostKeyException:
-        #     print "Server host key could not be verified."
-        #     return False
-        # except paramiko.AuthenticationException:
-        #     print "Authentication Failed"
-        #     return False
-        # except paramiko.SSHException:
-        #     print "Any other error connecting or establishing an SSH session"
-        #     return False
-        # except:
-        #     print "Other Error, maybe in socket creation."
-        #     return False
-
-        # return True
 
     def tokenize(self, cmd):
         return shlex.split(cmd)
