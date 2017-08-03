@@ -16,10 +16,11 @@
 #
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import print_function
 import sys
 import shlex
 import os
+import subprocess
 from src.constants import *
 from src.builtins import *
 from src.checkconfigdb import CheckConfig
@@ -66,7 +67,7 @@ class lssh:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.credentials['hostname'], self.credentials['port']))
         except Exception as e:
-            print '*** Connect failed: ' + e.args[1]
+            print('*** Connect failed: ' + e.args[1])
             #traceback.print_exc()
             sys.exit(1)
 
@@ -125,7 +126,7 @@ class lssh:
         strdata.replace('\r', '')
         self.directory = strdata.rsplit('\n', 1)[1]
 
-        print strdata.lstrip(command).rstrip(self.directory).strip('\n\r')
+        print(strdata.lstrip(command).rstrip(self.directory).strip('\n\r'))
 
     def interactive_shell(self, chan):
         if has_termios:
@@ -135,62 +136,116 @@ class lssh:
 
 
     def posix_shell(self, chan):
-        import select
 
+        # get the current TTY attributes to reapply after
+        # the remote shell is closed
         oldtty = termios.tcgetattr(sys.stdin)
-        command = ''
-        tab = False
+
+        def resize_pty():
+            # resize to match terminal size
+            tty_height, tty_width = \
+                    subprocess.check_output(['stty', 'size']).split()
+
+            # try to resize, and catch it if we fail due to a closed connection
+            try:
+                chan.resize_pty(width=int(tty_width), height=int(tty_height))
+            except paramiko.ssh_exception.SSHException:
+                pass
+
+        # wrap the whole thing in a try/finally construct to ensure
+        # that exiting code for TTY handling runs
         try:
-            tty.setraw(sys.stdin.fileno())
-            tty.setcbreak(sys.stdin.fileno())
+            stdin_fileno = sys.stdin.fileno()
+            tty.setraw(stdin_fileno)
+            tty.setcbreak(stdin_fileno)
+
             chan.settimeout(0.0)
 
-            while True:
+            is_alive = True
+            command = ''
+            tab = False
+
+            while is_alive:
+                # resize on every iteration of the main loop
+                resize_pty()
+
+                # use a unix select call to wait until the remote shell
+                # and stdin are ready for reading
+                # this is the block until data is ready
                 r, w, e = select.select([chan, sys.stdin], [], [])
+
+                # if the channel is one of the ready objects, print
+                # it out 1024 chars at a time
                 if chan in r:
+                    # try to do a read from the remote end and print to screen
                     try:
                         x = u(chan.recv(1024))
+
+                        # remote close
                         if len(x) == 0:
-                            sys.stdout.write('\r\n*** EOF\r\n')
-                            break
+                            # sys.stdout.write('\r\n*** EOF\r\n')
+                            is_alive = False
+                        else:
+                            # rely on 'print' to correctly handle encoding
+                            if tab:
+                                tab = False
+                                if '\n' not in x:
+                                    command = command + x
 
-                        if tab:
-                            tab = False
-                            if '\n' not in x:
-                                command = command + x
+                            # sys.stdout.write(x)
+                            # sys.stdout.flush()
+                            # rely on 'print' to correctly handle encoding
+                            print(x, end='')
+                            sys.stdout.flush()
 
-                        sys.stdout.write(x)
-                        sys.stdout.flush()
+                    # do nothing on a timeout, as this is an ordinary condition
                     except socket.timeout:
                         pass
 
-                if sys.stdin in r:
-                    x = sys.stdin.read(1)
+                # if stdin is ready for reading
+                if sys.stdin in r and is_alive:
+                    # send a single character out at a time
+                    # this is typically human input, so sending it one character at
+                    # a time is the only correct action we can take
+
+                    # use an os.read to prevent nasty buffering problem with shell
+                    # history
+                    x = os.read(stdin_fileno, 1)
+                    # x = sys.stdin.read(1)
+
+                    # if this side of the connection closes, shut down gracefully
                     if len(x) == 0:
-                        sys.stdout.write('\r\n***--------')
-                        break
-
-                    if x == chr(13): #Carriage Return
-                        #sys.stdout.write('\ncomando:')
-                        #sys.stdout.write(command)
-                        #sys.stdout.flush()
-                        if len(command) and not self.verifyCommand(command):
-                            for i in command:
-                                chan.send(chr(127))
-                            sys.stdout.flush()
-
-                        command = ''
-                    elif x == chr(9): #Horizontal Tab
-                        tab = True
-                    elif x == chr(127): #BackSpace
-                        command = command[:-1]
+                        # sys.stdout.write('\r\n***--------')
+                        # break
+                        is_alive = False
                     else:
-                        command = command + x
 
-                    chan.send(x)
+                        if x == chr(13): #Carriage Return
+                            #Si el comando no está registrado:
+                            if len(command) and not self.verifyCommand(command):
+                                for i in command:
+                                    chan.send(chr(127))
+                                sys.stdout.flush()
+
+                            command = ''
+                        elif x == chr(9): #Horizontal Tab
+                            tab = True
+                        elif x == chr(127): #BackSpace
+                            command = command[:-1]
+                        elif x == chr(27): #Teclas direccion
+                            pass
+                        else:
+                            command = command + x
+
+                        chan.send(x)
+            # close down the channel for send/recv
+            # this is an explicit call most likely redundant with the operations
+            # that caused an exit from the REPL, but unusual exit conditions can
+            # cause this to be reached uncalled
+            chan.shutdown(2)
 
         finally:
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
+            termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, oldtty)
 
 
     # thanks to Mike Looijmans for this code
@@ -317,6 +372,7 @@ class lssh:
             if self.credentials['username'] == '':
                 default_username = getpass.getuser()
                 self.credentials['username'] = input('Username [%s]: ' % default_username)
+
                 if len(self.credentials['username']) == 0:
                     self.credentials['username'] = default_username
 
@@ -390,6 +446,6 @@ class lssh:
                 if self.verifyCommand(cmd):
                     status = self.sendCommand(cmd)
                 else:
-                    print "Command Not Permitted"
+                    print("Command Not Permitted")
 
         self.closeConnection()

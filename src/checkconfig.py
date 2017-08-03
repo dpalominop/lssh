@@ -116,7 +116,7 @@ class CheckConfig:
 
     def __init__(self, args, stdin=None, stdout=None, stderr=None):
         """ Force the calling of the methods below
-        """ 
+        """
         if stdin is None:
             self.stdin = sys.stdin
         else:
@@ -179,7 +179,7 @@ class CheckConfig:
             if option in ['--version']:
                 self.version()
 
-        # put the expanded path of configfile and logpath (if exists) in 
+        # put the expanded path of configfile and logpath (if exists) in
         # LSSH_ARGS environment variable
         args = ['--config', conf['configfile']]
         if conf.has_key('logpath'): args += ['--log', conf['logpath']]
@@ -213,14 +213,14 @@ class CheckConfig:
         """ This method checks the existence of the "argumently" given         \
         configuration file.
         """
-        if not os.path.exists(file): 
+        if not os.path.exists(file):
             self.stderr.write("Error: Config file doesn't exist\n")
             self.stderr.write(usage)
             sys.exit(0)
         else: self.config = ConfigParser.ConfigParser()
 
     def get_global(self):
-        """ Loads the [global] parameters from the configuration file 
+        """ Loads the [global] parameters from the configuration file
         """
         try:
             self.config.read(self.conf['configfile'])
@@ -238,11 +238,11 @@ class CheckConfig:
                 self.conf[item[0]] = item[1]
 
     def check_log(self):
-        """ Sets the log level and log file 
+        """ Sets the log level and log file
         """
         # define log levels dict
-        self.levels = { 1 : logging.CRITICAL, 
-                        2 : logging.ERROR, 
+        self.levels = { 1 : logging.CRITICAL,
+                        2 : logging.ERROR,
                         3 : logging.WARNING,
                         4 : logging.DEBUG }
 
@@ -303,7 +303,7 @@ class CheckConfig:
             logfilename = logfilename.replace('%h','%02d%02d' % (currentime[3] \
                                                               , currentime[4]))
             logfilename = logfilename.replace('%u', getuser())
-        else: 
+        else:
             logfilename = getuser()
 
         if self.conf['loglevel'] > 0:
@@ -319,6 +319,7 @@ class CheckConfig:
                     logfile = os.path.join(self.conf['logpath'], \
                                                             logfilename+'.log')
                     # create log file if it does not exist, and set permissions
+                    # exec: chmod -R a+rwX lssh/
                     fp = open(logfile,'a').close()
                     os.chmod(logfile, 0600)
                     # set logging handler
@@ -329,7 +330,7 @@ class CheckConfig:
 
             except IOError:
                 # uncomment the 2 following lines to warn if log file is not   \
-                # writable 
+                # writable
                 sys.stderr.write('Warning: Cannot write in log file: '
                                                         'Permission denied.\n')
                 sys.stderr.write('Warning: Actions will not be logged.\n')
@@ -339,7 +340,7 @@ class CheckConfig:
         self.log = logger
 
     def get_config(self):
-        """ Load default, group and user configuation. Then merge them all. 
+        """ Load default, group and user configuation. Then merge them all.
         The loadpriority is done in the following order:
             1- User section
             2- Group section
@@ -362,7 +363,7 @@ class CheckConfig:
 
         # get groups configuration if any.
         # for each group the user belongs to, check if specific configuration  \
-        # exists.  The primary group has the highest priority. 
+        # exists.  The primary group has the highest priority.
         grplist = os.getgroups()
         grplist.reverse()
         for gid in grplist:
@@ -377,7 +378,7 @@ class CheckConfig:
         self.get_config_sub(self.user)
 
     def get_config_sub(self, section):
-        """ this function is used to interpret the configuration +/-, 
+        """ this function is used to interpret the configuration +/-,
             'all' etc.
         """
         # convert commandline options from dict to list of tuples, in order to
@@ -444,7 +445,7 @@ class CheckConfig:
         if extra.startswith('+'):
             if key == 'path':
                 for path in sublist:
-                    liste[0] += os.path.realpath(path) + '/.*|' 
+                    liste[0] += os.path.realpath(path) + '/.*|'
             else:
                 for item in sublist:
                     liste.append(item)
@@ -478,7 +479,7 @@ class CheckConfig:
                                                                     % directory)
 
         return str(expanded_all)
- 
+
     def myeval(self, value, info=''):
         """ if eval returns SyntaxError, log it as critical iconf missing """
         try:
@@ -710,7 +711,7 @@ class CheckConfig:
 
                 # check if scp is requested and allowed
                 if self.conf['ssh'].startswith('scp '):
-                    if self.conf['scp'] is 1 or 'scp' in self.conf['overssh']: 
+                    if self.conf['scp'] is 1 or 'scp' in self.conf['overssh']:
                         if ' -f ' in self.conf['ssh']:
                             # case scp download is allowed
                             if self.conf['scp_download']:
@@ -741,7 +742,7 @@ class CheckConfig:
                             # case scp upload is forbidden
                             else:
                                 self.log.error('SCP: upload forbidden: "%s"'   \
-                                                            % self.conf['ssh']) 
+                                                            % self.conf['ssh'])
                                 sys.exit(0)
                         exec_cmd(self.conf['ssh'])
                         self.log.error('SCP disconnect')
@@ -790,15 +791,15 @@ class CheckConfig:
         """ As a passwd field is required by user. This method checks in the   \
         configuration file if the password is empty, in wich case, no password \
         check is required. In the other case, the password is asked to be      \
-        entered. 
+        entered.
         If the entered password is wrong, the user is exited from lssh.
         """
         if self.config.has_section(self.user):
             if self.config.has_option(self.user, 'passwd'):
                 passwd = self.config.get(self.user, 'passwd')
-            else: 
+            else:
                 passwd = None
-        else: 
+        else:
             passwd = None
 
         if passwd:
@@ -811,10 +812,10 @@ class CheckConfig:
 
     def get_config_mtime(self, configfile):
         """ get configuration file modification time, and store in the        \
-            configuration dict. This should then be used to reload the 
+            configuration dict. This should then be used to reload the
             configuration dynamically upon file changes
         """
-        
+
         return os.path.getmtime(configfile)
 
     def returnconf(self):
