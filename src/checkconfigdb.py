@@ -31,11 +31,6 @@ import glob
 from utils import get_aliases,exec_cmd
 import psycopg2
 
-dbname = 'sa_dev'
-host = 'localhost'
-user = 'sa'
-password = 'password'
-
 __version__ = "0.1"
 
 # Required config variable list per user
@@ -133,6 +128,7 @@ class CheckConfig:
         else:
             self.stderr = stderr
 
+        self.readConfigFile()
         self.conf = {}
         self.credentials = credentials
         self.conf, self.arguments = self.getoptions(credentials, self.conf)
@@ -145,6 +141,34 @@ class CheckConfig:
         self.get_config_user()
         self.check_env()
         self.check_scp_sftp()
+
+    def readConfigFile(self):
+        import ConfigParser
+        config = ConfigParser.ConfigParser()
+        try:
+            config.read("/etc/lssh.conf")
+            self.dbCredential = {
+                'db_dbname':'sa_dev',
+                'db_hostname' :'localhost',
+                'db_username' :'sa',
+                'db_password':'password',
+            }
+            try:
+                options = config.options('database')
+                if 'database' in options:
+                    self.dbCredential['db_dbname'] = config.get('database', 'database')
+                if 'hostname' in options:
+                    self.dbCredential['db_hostname'] = config.get('database', 'hostname')
+                if 'username' in options:
+                    self.dbCredential['db_username'] = config.get('database', 'username')
+                if 'password' in options:
+                    self.dbCredential['db_password'] = config.get('database', 'password')
+
+            except:
+                print "Not exists section: database."
+
+        except:
+            print "File /etc/lssh.conf not found."
 
     def getoptions(self, arguments, conf):
         """ This method checks the usage. lssh.py must be called with a      \
@@ -189,7 +213,12 @@ class CheckConfig:
         """
 
         try:
-            conn = psycopg2.connect('dbname=%s user=%s host=%s password=%s'%(dbname, user, host, password))
+            conn = psycopg2.connect('dbname=%s user=%s host=%s password=%s'%(self.dbCredential['db_dbname'],
+                                                                             self.dbCredential['db_username'],
+                                                                             self.dbCredential['db_hostname'],
+                                                                             self.dbCredential['db_password']
+                                                                             )
+                                    )
         except:
             self.stderr.write("ERR: Unable to connect to the database\n")
             sys.exit(0)
