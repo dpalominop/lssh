@@ -348,7 +348,8 @@ class CheckConfig:
             3- Default section
         """
 
-        self.user = self.credentials['username']
+        # self.user = self.credentials['username']
+        self.user = getuser()
 
         self.conf_raw = {}
 
