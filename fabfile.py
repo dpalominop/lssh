@@ -21,6 +21,8 @@ env.git_clone = 'git@github.com:dpalominop/lssh.git'
 def build_code():
     """Build code on all servers"""
     with cd("%s/%s/current"%(env.base_dir, env.app_name)):
-        sudo_run('python setup.py build install')
+        sudo_run('python setup.py clean')
+        sudo_run('python setup.py build')
+        sudo_run('python setup.py install')
 # or
 # env.wsgi_path = "app_name/apache.wsgi" # Relative path to the wsgi file to be touched on restart
