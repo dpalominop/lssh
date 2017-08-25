@@ -367,12 +367,13 @@ class CheckConfig:
                                         SELECT command_list_id FROM command_list_employees WHERE employee_id=(
                                             SELECT id FROM employees WHERE username='%s'
                                         )
-                                    ) AND network_element_id=(
-                                        SELECT id FROM network_elements WHERE ip='%s'
+                                    ) AND (platform_id, system_id, type_id) = (
+                                        SELECT platform_id, system_id, type_id FROM network_elements WHERE ip='%s'
                                     )
                                 )
                             )
                          """%(self.credentials['username'], self.credentials['hostname']))
+
         conf = [('allowed', str([row[0] for row in self.cur.fetchall()]))] + conf
 
         self.cur.execute("""SELECT * FROM default_permissions""")
