@@ -30,6 +30,7 @@ import time
 import glob
 from utils import get_aliases,exec_cmd
 import psycopg2
+import ConfigParser
 
 __version__ = "0.1"
 
@@ -72,57 +73,14 @@ Cheers.
 intro = """You are in a limited secure shell.
 Type '?' or 'help' to get the list of allowed commands"""
 
-# configuration parameters
-configparams = [ 'config=',
-                 'help',
-                 'version',
-                 'quiet=',
-                 'log=',
-                 'logpath=',
-                 'loglevel=',
-                 'logfilename=',
-                 'syslogname=',
-                 'allowed=',
-                 'forbidden=',
-                 'sudo_commands=',
-                 'warning_counter=',
-                 'aliases=',
-                 'intro=',
-                 'prompt=',
-                 'prompt_short=',
-                 'timer=',
-                 'path=',
-                 'home_path=',
-                 'env_path=',
-                 'allowed_cmd_path=',
-                 'env_vars=',
-                 'scp=',
-                 'scp_upload=',
-                 'scp_download=',
-                 'sftp=',
-                 'overssh=',
-                 'strict=',
-                 'scpforce=',
-                 'history_size=',
-                 'history_file=',
-                 'include_dir=']
-
 
 class CheckConfig:
     """ Check the configuration file.
     """
 
-    def __init__(self, credentials, stdin=None, stdout=None, stderr=None):
+    def __init__(self, credentials, stderr=None):
         """ Force the calling of the methods below
         """
-        if stdin is None:
-            self.stdin = sys.stdin
-        else:
-            self.stdin = stdin
-        if stdout is None:
-            self.stdout = sys.stdout
-        else:
-            self.stdout = stdout
         if stderr is None:
             self.stderr = sys.stderr
         else:
@@ -139,11 +97,9 @@ class CheckConfig:
         self.get_config()
         self.check_user_integrity()
         self.get_config_user()
-        self.check_env()
         self.check_scp_sftp()
 
     def readConfigFile(self):
-        import ConfigParser
         config = ConfigParser.ConfigParser()
         try:
             config.read("/etc/lssh.conf")
@@ -201,15 +157,8 @@ class CheckConfig:
         sys.stderr.write('lssh-%s - Limited Shell\n' % __version__)
         sys.exit(0)
 
-    def check_env(self):
-        """ Load environment variable set in configuration file """
-        if self.conf.has_key('env_vars'):
-            env_vars = self.conf['env_vars']
-            for key in env_vars.keys():
-                os.environ[key] = str(env_vars[key])
-
     def get_global(self):
-        """ Loads the [global] parameters from the configuration file
+        """ Loads the [global] parameters from the database
         """
 
         try:
@@ -234,10 +183,10 @@ class CheckConfig:
         if self.cur.fetchall()[0][0]:
             self.cur.execute("""SELECT * FROM global_settings""")
             for row in self.cur.fetchall():
-                self.conf['logpath'] = row[1]
-                self.conf['loglevel'] = row[2]
+                self.conf['logpath']     = row[1]
+                self.conf['loglevel']    = row[2]
                 self.conf['logfilename'] = row[3]
-                self.conf['syslogname'] = row[4]
+                self.conf['syslogname']  = row[4]
 
     def check_log(self):
         """ Sets the log level and log file
