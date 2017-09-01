@@ -38,18 +38,7 @@ __version__ = "0.1"
 required_config = ['allowed', 'forbidden', 'warning_counter']
 #                                                    'timer', 'scp', 'sftp']
 
-# set configuration file path depending on sys.exec_prefix
-# on *Linux sys.exec_prefix = '/usr' and default path must be in '/etc'
-# on *BSD sys.exec_prefix = '/usr/{pkg,local}/' and default path
-# is '/usr/{pkg,local}/etc'
-
-if sys.exec_prefix != '/usr':
-    # for *BSD
-    conf_prefix = sys.exec_prefix
-else:
-    # for *Linux
-    conf_prefix = ''
-configfile = conf_prefix + '/etc/lssh.conf'
+configfile = '/etc/lssh.conf'
 
 # history file
 history_file = ".lhistory"
@@ -102,7 +91,7 @@ class CheckConfig:
     def readConfigFile(self):
         config = ConfigParser.ConfigParser()
         try:
-            config.read("/etc/lssh.conf")
+            config.read(configfile)
             self.dbCredential = {
                 'db_dbname':'sa_dev',
                 'db_hostname' :'localhost',
@@ -310,20 +299,32 @@ class CheckConfig:
                 conf.append((key,self.conf[key]))
 
         #conf = self.config.items(section) + conf
-        self.cur.execute("""SELECT name FROM commands WHERE id IN (
-                                SELECT command_id FROM command_command_lists WHERE command_list_id IN (
-                                    SELECT id FROM command_lists WHERE id IN (
-                                        SELECT command_list_id FROM command_list_employees WHERE employee_id=(
-                                            SELECT id FROM employees WHERE username='%s'
-                                        )
-                                    ) AND (platform_id, system_id, type_id) = (
-                                        SELECT platform_id, system_id, type_id FROM network_elements WHERE ip='%s'
-                                    )
+        self.cur.execute("""SELECT id FROM command_lists WHERE id IN (
+                                SELECT command_list_id FROM command_list_employees WHERE employee_id=(
+                                    SELECT id FROM employees WHERE username='%s'
                                 )
+                            ) AND (platform_id, system_id, type_id) = (
+                                SELECT platform_id, system_id, type_id FROM network_elements WHERE ip='%s'
                             )
                          """%(self.credentials['username'], self.credentials['hostname']))
+        cl_id = self.cur.fetchall()[0][0]
 
-        conf = [('allowed', str([row[0] for row in self.cur.fetchall()]))] + conf
+        self.cur.execute("""SELECT all_commands FROM command_lists WHERE id = %s"""%(cl_id))
+        all_commands = self.cur.fetchall()[0][0]
+
+        if all_commands:
+            self.cur.execute("""SELECT name FROM commands WHERE id IN (
+                                    SELECT exclude_command_id FROM command_list_exclude_commands WHERE command_list_id = %s
+                                )
+                             """%(cl_id))
+            conf = [('allowed', str(['all'])), ('excluded', str([row[0] for row in self.cur.fetchall()]))] + conf
+        else:
+            self.cur.execute("""SELECT name FROM commands WHERE id IN (
+                                    SELECT command_id FROM command_command_lists WHERE command_list_id = %s
+                                )
+                             """%(cl_id))
+
+            conf = [('allowed', str([row[0] for row in self.cur.fetchall()])),('excluded', str(['']))] + conf
 
         self.cur.execute("""SELECT * FROM default_permissions""")
         for row in self.cur.fetchall():
@@ -331,7 +332,6 @@ class CheckConfig:
 
         for item in conf:
             self.conf_raw.update(dict([item]))
-
 
     def minusplus(self, confdict, key, extra):
         """ update configuration lists containing -/+ operators
@@ -427,6 +427,7 @@ class CheckConfig:
                 pass
 
         for item in ['allowed',
+                    'excluded',
                     'forbidden',
                     'sudo_commands',
                     'warning_counter',

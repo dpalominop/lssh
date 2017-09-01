@@ -52,7 +52,7 @@ class lssh:
 
     def __init__(self, credentials):
         self.credentials = credentials
-        self.userconf = CheckConfig(self.credentials).returnconf()
+        # self.userconf = CheckConfig(self.credentials).returnconf()
         # Hash map to store built-in function name and reference as key and value
         self.built_in_cmds = {}
 
@@ -77,10 +77,16 @@ class lssh:
         #self.prompt = '%s:~$ ' % self.setprompt(self.userconf)
         self.log = self.userconf['logpath']
 
-        if self.tokenize(command)[0] in self.userconf['allowed']:
-            return True
+        if 'all' in self.userconf['allowed']:
+            if self.tokenize(command)[0] not in self.userconf['excluded']:
+                return True
+            else:
+                return False
         else:
-            return False
+            if self.tokenize(command)[0] in self.userconf['allowed']:
+                return True
+            else:
+                return False
 
     def interactive_shell(self, chan):
         if has_termios:
