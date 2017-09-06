@@ -180,6 +180,8 @@ class lssh:
                                 for i in command:
                                     chan.send(chr(127))
                                 sys.stdout.flush()
+                                os.write(sys.stdout.fileno(), ' : Comando Prohibido\n')
+                                sys.stdout.flush()
 
                             command = ''
                         elif x == chr(9): #Horizontal Tab
@@ -192,6 +194,7 @@ class lssh:
                             command = command + x
 
                         chan.send(x)
+
             # close down the channel for send/recv
             # this is an explicit call most likely redundant with the operations
             # that caused an exit from the REPL, but unusual exit conditions can
