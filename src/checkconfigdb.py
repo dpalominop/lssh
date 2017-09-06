@@ -313,18 +313,18 @@ class CheckConfig:
         all_commands = self.cur.fetchall()[0][0]
 
         if all_commands:
-            self.cur.execute("""SELECT name FROM commands WHERE id IN (
+            self.cur.execute("""SELECT name FROM exclude_commands WHERE id IN (
                                     SELECT exclude_command_id FROM command_list_exclude_commands WHERE command_list_id = %s
                                 )
                              """%(cl_id))
-            conf = [('allowed', str(['all'])), ('excluded', str([row[0] for row in self.cur.fetchall()]))] + conf
+            conf = [('allowed', str(['all'])), ('excluded', str([row[0] for row in self.cur.fetchall() if row]))] + conf
         else:
             self.cur.execute("""SELECT name FROM commands WHERE id IN (
                                     SELECT command_id FROM command_command_lists WHERE command_list_id = %s
                                 )
                              """%(cl_id))
 
-            conf = [('allowed', str([row[0] for row in self.cur.fetchall()])),('excluded', str(['']))] + conf
+            conf = [('allowed', str([row[0] for row in self.cur.fetchall() if row])),('excluded', str(['']))] + conf
 
         self.cur.execute("""SELECT * FROM default_permissions""")
         for row in self.cur.fetchall():
