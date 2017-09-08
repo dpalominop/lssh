@@ -14,7 +14,7 @@ And execute: fab -c .fabricrc my_task"""
 
 env.hosts = ["10.123.120.196","10.123.120.197","10.123.120.198","10.123.120.199"]
 env.pip_install_command = 'pip install -r requirements.txt'
-env.git_clone = 'git@github.com:dpalominop/lssh.git'
+env.git_clone = 'https://github.com/dpalominop/lssh.git'
 
 @task
 @with_defaults
