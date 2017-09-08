@@ -306,7 +306,7 @@ class CheckConfig:
                             ) AND (platform_id, system_id, type_id) = (
                                 SELECT platform_id, system_id, type_id FROM network_elements WHERE ip='%s'
                             )
-                         """%(self.credentials['username'], self.credentials['hostname']))
+                         """%(getuser(), self.credentials['hostname']))
         cl_id = self.cur.fetchall()[0][0]
 
         self.cur.execute("""SELECT all_commands FROM command_lists WHERE id = %s"""%(cl_id))
