@@ -280,21 +280,24 @@ class lssh:
                 try:
                     keys = paramiko.util.load_host_keys(os.path.expanduser('~/ssh/known_hosts'))
                 except IOError:
-                    os.write(sys.stdout.fileno(), '*** Unable to open host keys file\n')
+                    # os.write(sys.stdout.fileno(), '*** Unable to open host keys file\n')
                     keys = {}
 
             # check server's host key -- this is important.
             key = self.transport.get_remote_server_key()
 
             if self.credentials['hostname'] not in keys:
-                os.write(sys.stdout.fileno(), '*** WARNING: Unknown host key!\n')
+                # os.write(sys.stdout.fileno(), '*** WARNING: Unknown host key!\n')
+                pass
             elif key.get_name() not in keys[self.credentials['hostname']]:
-                os.write(sys.stdout.fileno(), '*** WARNING: Unknown host key!\n')
+                # os.write(sys.stdout.fileno(), '*** WARNING: Unknown host key!\n')
+                pass
             elif keys[self.credentials['hostname']][key.get_name()] != key:
-                os.write(sys.stdout.fileno(), '*** WARNING: Host key has changed!!!\n')
+                # os.write(sys.stdout.fileno(), '*** WARNING: Host key has changed!!!\n')
                 sys.exit(1)
             else:
-                os.write(sys.stdout.fileno(), '*** Host key OK.\n')
+                # os.write(sys.stdout.fileno(), '*** Host key OK.\n')
+                pass
 
             # get username
             if self.credentials['username'] == '':
