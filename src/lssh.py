@@ -249,7 +249,7 @@ class lssh:
             #print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
             try:
                 transport.auth_publickey(username, key)
-                os.write(sys.stdout.fileno(), '... success!\n')
+                os.write(sys.stdout.fileno(), '\033[92m... success!\n\033[0m')
                 return
             except paramiko.SSHException:
                 #print('... nope.')
@@ -258,10 +258,10 @@ class lssh:
 
     def manual_auth(self, username, hostname):
         try:
-            pw = getpass.getpass('Password for %s@%s: ' % (username, hostname))
+            pw = getpass.getpass('\033[94mPassword for %s@%s: \033[0m' % (username, hostname))
             self.transport.auth_password(username, pw)
         except paramiko.AuthenticationException:
-            os.write(sys.stdout.fileno(), '*** Authentication failed. ***\n')
+            os.write(sys.stdout.fileno(), '\033[91m*** Authentication failed. ***\n\033[0m')
             sys.exit(1)
 
     def startConnection(self):
@@ -271,7 +271,7 @@ class lssh:
             try:
                 self.transport.start_client()
             except paramiko.SSHException:
-                os.write(sys.stdout.fileno(), '*** SSH negotiation failed.\n')
+                os.write(sys.stdout.fileno(), '\033[91m*** SSH negotiation failed.\n\033[0m')
                 sys.exit(1)
 
             try:
@@ -302,7 +302,7 @@ class lssh:
             # get username
             if self.credentials['username'] == '':
                 default_username = getpass.getuser()
-                os.write(sys.stdout.fileno(), 'Username [%s]: ' % default_username)
+                os.write(sys.stdout.fileno(), '\033[94mUsername [%s]: \033[0m' % default_username)
                 self.credentials['username'] = input()
 
                 if len(self.credentials['username']) == 0:
@@ -312,7 +312,7 @@ class lssh:
             if not self.transport.is_authenticated():
                 self.manual_auth(self.credentials['username'], self.credentials['hostname'])
             if not self.transport.is_authenticated():
-                os.write(sys.stdout.fileno(), '*** Authentication failed. ***\n')
+                os.write(sys.stdout.fileno(), '\033[91m*** Authentication failed. ***\n\033[0m')
                 self.transport.close()
                 sys.exit(1)
 
@@ -325,7 +325,7 @@ class lssh:
             self.transport.close()
 
         except Exception as e:
-            os.write(sys.stdout.fileno(), '*** Caught exception: ' + str(e.__class__) + ': ' + str(e) + '\n')
+            os.write(sys.stdout.fileno(), '\033[91m*** Caught exception: ' + str(e.__class__) + ': ' + str(e) + '\n\033[0m')
             traceback.print_exc()
             try:
                 self.transport.close()
