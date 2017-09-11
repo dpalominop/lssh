@@ -259,7 +259,7 @@ class lssh:
     def manual_auth(self, username, hostname):
         try:
             pw = getpass.getpass('\033[94mPassword for %s@%s: \033[0m' % (username, hostname))
-            self.transport.auth_password(username, pw)
+            self.transport.auth_password(username, pw if pw else ' ')
         except paramiko.AuthenticationException:
             os.write(sys.stdout.fileno(), '\033[91m*** Authentication failed. ***\n\033[0m')
             sys.exit(1)
