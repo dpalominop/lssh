@@ -52,6 +52,12 @@ def getCredentials(argv):
 
     return credentials
 
+import signal
+
+def exit_gracefully(signum, frame):
+    print ''
+    sys.exit(1)
+
 def main():
     """ Main Function """
 
@@ -61,4 +67,5 @@ def main():
     ssh.startConnection()
 
 if __name__ == '__main__':
+    signal.signal(signal.SIGINT, exit_gracefully)
     main()
