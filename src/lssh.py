@@ -67,7 +67,7 @@ class lssh:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock.connect((self.credentials['hostname'], self.credentials['port']))
         except Exception as e:
-            print('*** Connect failed: ' + e.args[1])
+            print('\t\t\t*** Connect failed: ' + e.args[1])
             #traceback.print_exc()
             sys.exit(1)
 
@@ -249,7 +249,7 @@ class lssh:
             #print('Trying ssh-agent key %s' % hexlify(key.get_fingerprint()))
             try:
                 transport.auth_publickey(username, key)
-                os.write(sys.stdout.fileno(), '\033[92m... success!\n\033[0m')
+                os.write(sys.stdout.fileno(), '\t\t\t\033[92m... success!\n\033[0m')
                 return
             except paramiko.SSHException:
                 #print('... nope.')
@@ -258,10 +258,10 @@ class lssh:
 
     def manual_auth(self, username, hostname):
         try:
-            pw = getpass.getpass('\033[94mPassword for %s@%s: \033[0m' % (username, hostname))
+            pw = getpass.getpass('\t\t\t\033[94mPassword for %s@%s: \033[0m' % (username, hostname))
             self.transport.auth_password(username, pw if pw else ' ')
         except paramiko.AuthenticationException:
-            os.write(sys.stdout.fileno(), '\033[91m*** Authentication failed. ***\n\033[0m')
+            os.write(sys.stdout.fileno(), '\t\t\t\033[91m*** Authentication failed. ***\n\033[0m')
             sys.exit(1)
 
     def startConnection(self):
@@ -302,7 +302,7 @@ class lssh:
             # get username
             if self.credentials['username'] == '':
                 default_username = getpass.getuser()
-                os.write(sys.stdout.fileno(), '\033[94mUsername [%s]: \033[0m' % default_username)
+                os.write(sys.stdout.fileno(), '\t\t\t\033[94mUsername [%s]: \033[0m' % default_username)
                 self.credentials['username'] = input()
 
                 if len(self.credentials['username']) == 0:
@@ -311,8 +311,9 @@ class lssh:
             self.agent_auth(self.transport, self.credentials['username'])
             if not self.transport.is_authenticated():
                 self.manual_auth(self.credentials['username'], self.credentials['hostname'])
+                os.system('clear')
             if not self.transport.is_authenticated():
-                os.write(sys.stdout.fileno(), '\033[91m*** Authentication failed. ***\n\033[0m')
+                os.write(sys.stdout.fileno(), '\t\t\t\033[91m*** Authentication failed. ***\n\033[0m')
                 self.transport.close()
                 sys.exit(1)
 
