@@ -139,7 +139,7 @@ class lssh:
                 if chan in r:
                     # try to do a read from the remote end and print to screen
                     try:
-                        x = u(chan.recv(1024))
+                        x = chan.recv(1024)
 
                         # remote close
                         if len(x) == 0:
